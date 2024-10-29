@@ -1,24 +1,38 @@
 from django.shortcuts import render
+from django.urls import reverse
+from django.http import HttpResponseRedirect
+from rest_framework.reverse import reverse
 from rest_framework import generics
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
+from rest_framework.mixins import CreateModelMixin
 from .models import User
 from .serializer import UserSerializer
 
-class UserPostListCreate(generics.ListCreateAPIView):
+class UserPostListCreate(generics.ListCreateAPIView , CreateModelMixin):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
-    def delete(self , request , *args , **kwargs):
-        User.objects.all().delete()
-        return Response(status = status.HTTP_204_NO_CONTENT)
+    def create(self , request , *args , **kwargs):
+        serializer = self.get_serializer(data = request.data)
+        serializer.is_valid(raise_exception = True)
+        self.perform_create(serializer)
+        redirect_url = reverse('userpostlistcreate', request=request)
+        return Response({'redirect': redirect_url}, status=status.HTTP_201_CREATED)
+
 
 class UserPostRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     lookup_field = "pk"
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        redirect_url = reverse('userpostlistcreate' , request = request )
+        return Response({'redirect': redirect_url} , status = status.HTTP_204_NO_CONTENT)
 
 class UserPostList(APIView):
     def get(self , request , format = None):
