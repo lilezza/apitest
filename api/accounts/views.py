@@ -28,11 +28,23 @@ class UserPostRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = UserSerializer
     lookup_field = "pk"
 
+    def put(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        # برگرداندن لینک در پاسخ به جای ریدایرکت
+        redirect_url = reverse('userpostlistcreate', request=request)
+        return Response({'redirect_url': redirect_url}, status=status.HTTP_200_OK)
+
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.delete()
         redirect_url = reverse('userpostlistcreate' , request = request )
         return Response({'redirect': redirect_url} , status = status.HTTP_204_NO_CONTENT)
+
 
 class UserPostList(APIView):
     def get(self , request , format = None):
